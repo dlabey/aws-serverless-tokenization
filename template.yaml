@@ -1,0 +1,116 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS Serverless Tokenization Example
+
+Resources:
+  # DynamoDB Tables
+  Keys:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: KmsKeyId
+          AttributeType: S
+        - AttributeName: IsCurrent
+          AttributeType: BOOL
+        - AttributeName: RotatedAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: KmsKeyId
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: Keys
+      SSESpecification:
+        SSEEnabled: true
+
+  Policies:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: PolicyId
+          AttributeType: S
+        - AttributeName: DataKey
+          AttributeType: S
+        - AttributeName: CreatedAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PolicyId
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: Keys
+      SSESpecification:
+        SSEEnabled: true
+
+  Tokens:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: Token
+          AttributeType: S
+        - AttributeName: PolicyId
+          AttributeType: S
+        - AttributeName: Pan
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Token
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: Tokens
+      SSESpecification:
+        SSEEnabled: true
+
+  # Lambda Functions
+  Tokenizer:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: tokenize
+      CodeUri: /tokenize.zip
+      Runtime: go1.x
+      Events:
+        Tokenize:
+          Type: Api
+          Properties:
+            Path: /tokenize
+            Medthod: post
+
+  Detokenizer:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: detokenize
+      CodeUri: /detokenize.zip
+      Runtime: go1.x
+      Events:
+        Detokenize:
+          Type: Api
+          Properties:
+            Path: /detokenize
+            Medthod: post
+
+  KeyRotator:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: rotate_keys
+      CodeUri: /rotate_keys.zip
+      Runtime: go1.x
+      Events:
+        Rotate:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+
+  PolicyEvolver:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: evolve_policy
+      CodeUri: /evolve_policy.zip
+      Runtime: go1.x
+      Events:
+        Evolve:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:

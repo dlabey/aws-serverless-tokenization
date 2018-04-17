@@ -9,19 +9,23 @@ used for production.
 
 ## Security Philosophy
 
-This project treats security as a constant moving target and uses rotating keys
-managed through the AWS Key Management Service as well as a tokenization
-algorithm that applies encryption on top of the hashed PAN that is salted
-through the current policy at time of hash. The token encryption key is
-periodically rotated which does a batch transactional update to the tokens in
-the Amazon DynamoDB table with no customer impact. Also, if the token table gets
-stolen the token encryption key can be rotated ad-hoc which also has no customer
-impact. Furthermore when interacting with Amazon DynamoDB the data will
-encrypted in transit as well as at rest.
+This project treats security as a constant moving target and uses evolving
+policies and rotating keys. Policies are used in calculating the token and keys
+are used in encrypting the PAN. The token is calculated in a way that allows
+determination of the BIN and SPAN while maintaining confidentiality at the table
+level through use of the policy. The policy is periodically evolved to provide
+an extra layer of segmentation and obfuscation for the token. The PAN encryption
+keys are managed through the AWS Key Management Service for encryption of the
+PAN. The keys are periodically rotated which does a batch transactional update
+to the PANs in the Amazon DynamoDB table with no customer impact. Also, if the
+token table gets stolen the token encryption key can be rotated ad-hoc which
+also has no customer impact. Furthermore, when interacting with Amazon DynamoDB
+the data is encrypted in transit as well as at rest.
 
 ## Policy Change
 
-The policy is essentially the salt that is used to compute the hash of the
-sensitive part of the PAN. This policy will not rotate because of the client
-needing to maintain an immutable reference to the token but will instead evolve
-by changing for new records at certain points in time.
+The policy is essentially the key that is used to encrypt the BIN and SPAN as
+well as the salt that is used compute a unique hash of the PAN in the token.
+The policy does not rotate because of the client needing to maintain an
+immutable reference to the token but instead evolves by changing for new records
+at certain points in time.

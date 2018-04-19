@@ -68,7 +68,7 @@ Resources:
   Tokenizer:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: tokenize
+      Handler: cmd/tokenize/tokenize
       CodeUri: /tokenize.zip
       Runtime: go1.x
       Events:
@@ -76,12 +76,12 @@ Resources:
           Type: Api
           Properties:
             Path: /tokenize
-            Medthod: post
+            Method: post
 
   Detokenizer:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: detokenize
+      Handler: cmd/detokenize/detokenize
       CodeUri: /detokenize.zip
       Runtime: go1.x
       Events:
@@ -89,12 +89,12 @@ Resources:
           Type: Api
           Properties:
             Path: /detokenize
-            Medthod: post
+            Method: post
 
   KeyRotator:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: rotate_keys
+      Handler: cmd/rotate_keys/rotate_keys
       CodeUri: /rotate_keys.zip
       Runtime: go1.x
       Events:
@@ -106,7 +106,7 @@ Resources:
   PolicyEvolver:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: evolve_policy
+      Handler: cmd/evolve_policy/evolve_policy
       CodeUri: /evolve_policy.zip
       Runtime: go1.x
       Events:

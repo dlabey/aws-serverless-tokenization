@@ -4,43 +4,45 @@ Description: AWS Serverless Tokenization Example
 
 Resources:
   # DynamoDB Tables
-  Keys:
+  EncryptionKeys:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
-        - AttributeName: KmsKeyId
+        - AttributeName: EncryptionKeyId
           AttributeType: S
+        - AttributeName: DataKey
+          AttributeType: Binary
         - AttributeName: IsCurrent
           AttributeType: BOOL
         - AttributeName: RotatedAt
           AttributeType: S
       KeySchema:
-        - AttributeName: KmsKeyId
+        - AttributeName: EncryptionKeyId
           KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
-      TableName: Keys
+      TableName: EncryptionKeys
       SSESpecification:
         SSEEnabled: true
 
-  Policies:
+  PolicyKeys:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
-        - AttributeName: PolicyId
+        - AttributeName: PolicyKeyId
           AttributeType: S
         - AttributeName: DataKey
-          AttributeType: S
+          AttributeType: Binary
         - AttributeName: CreatedAt
           AttributeType: S
       KeySchema:
-        - AttributeName: PolicyId
+        - AttributeName: PolicyKeyId
           KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
-      TableName: Keys
+      TableName: PolicyKeys
       SSESpecification:
         SSEEnabled: true
 
@@ -50,7 +52,7 @@ Resources:
       AttributeDefinitions:
         - AttributeName: Token
           AttributeType: S
-        - AttributeName: PolicyId
+        - AttributeName: PolicyKeyId
           AttributeType: S
         - AttributeName: Pan
           AttributeType: S

@@ -25,15 +25,15 @@ func Handler(event events.CloudWatchEvent) (string, error) {
 	kmsSvc := kms.New(sess)
 	dynamodbSvc := dynamodb.New(sess)
 
-	// create a new policy
-	policyRes, err := kmsSvc.CreateKey(&kms.CreateKeyInput{})
+	// create a new policy key
+	policyKeyRes, err := kmsSvc.CreateKey(&kms.CreateKeyInput{})
 	if err != nil {
 		return out, err
 	}
 
-	// generate the encrypted data key for the new policy
+	// generate the encrypted data key for the new policy key
 	dataKeyInput := &kms.GenerateDataKeyInput{
-		KeyId: aws.String(*policyRes.KeyMetadata.KeyId),
+		KeyId: aws.String(*policyKeyRes.KeyMetadata.KeyId),
 	}
 	dataKeyRes, err := kmsSvc.GenerateDataKey(dataKeyInput)
 	if err != nil {
@@ -45,7 +45,7 @@ func Handler(event events.CloudWatchEvent) (string, error) {
 		TableName: aws.String("PolicyKeys"),
 		Item: map[string]*dynamodb.AttributeValue{
 			"PolicyKeyId": {
-				S: aws.String(*policyRes.KeyMetadata.KeyId),
+				S: aws.String(*policyKeyRes.KeyMetadata.KeyId),
 			},
 			"DataKey": {
 				B: dataKeyRes.CiphertextBlob,
@@ -57,7 +57,7 @@ func Handler(event events.CloudWatchEvent) (string, error) {
 	}
 	_, err = dynamodbSvc.PutItem(policyKeyInput)
 	if err == nil {
-		out = *policyRes.KeyMetadata.KeyId
+		out = *policyKeyRes.KeyMetadata.KeyId
 	}
 
 	return out, err

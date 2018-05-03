@@ -54,6 +54,8 @@ Resources:
           AttributeType: S
         - AttributeName: PolicyKeyId
           AttributeType: S
+        - AttributeName: EncryptionKeyId
+          AttributeValue: S
         - AttributeName: Pan
           AttributeType: S
       KeySchema:
@@ -93,11 +95,11 @@ Resources:
             Path: /detokenize
             Method: post
 
-  KeyRotator:
+  EncryptionKeyRotator:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: cmd/rotate_keys/rotate_keys
-      CodeUri: /rotate_keys.zip
+      Handler: cmd/rotate_encryption_key/rotate_encryption_key
+      CodeUri: /rotate_encryption_key.zip
       Runtime: go1.x
       Events:
         Rotate:
@@ -105,11 +107,11 @@ Resources:
           Properties:
             Pattern:
 
-  PolicyEvolver:
+  PolicyKeyEvolver:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: cmd/evolve_policy/evolve_policy
-      CodeUri: /evolve_policy.zip
+      Handler: cmd/evolve_policy_key/evolve_policy_key
+      CodeUri: /evolve_policy_key.zip
       Runtime: go1.x
       Events:
         Evolve:

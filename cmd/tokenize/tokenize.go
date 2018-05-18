@@ -5,7 +5,8 @@ import (
 	"gopkg.in/aws/aws-lambda-go.v1/lambda"
 )
 
-func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+// TokenizeHandler is an API Gateway handler that tokenizes a credit card.
+func TokenizeHandler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{
 		Body:       "Tokenize",
 		StatusCode: 200,
@@ -13,5 +14,5 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 }
 
 func main() {
-	lambda.Start(Handler)
+	lambda.Start(TokenizeHandler)
 }

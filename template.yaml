@@ -10,12 +10,12 @@ Resources:
       AttributeDefinitions:
         - AttributeName: EncryptionKeyId
           AttributeType: S
-        - AttributeName: DataKey
-          AttributeType: Binary
-        - AttributeName: IsCurrent
-          AttributeType: BOOL
-        - AttributeName: RotatedAt
-          AttributeType: S
+        # - AttributeName: DataKey
+        #   AttributeType: Binary
+        # - AttributeName: IsCurrent
+        #   AttributeType: BOOL
+        # - AttributeName: RotatedAt
+        #   AttributeType: S
       KeySchema:
         - AttributeName: EncryptionKeyId
           KeyType: HASH
@@ -32,10 +32,10 @@ Resources:
       AttributeDefinitions:
         - AttributeName: PolicyKeyId
           AttributeType: S
-        - AttributeName: DataKey
-          AttributeType: Binary
-        - AttributeName: CreatedAt
-          AttributeType: S
+        # - AttributeName: DataKey
+        #   AttributeType: Binary
+        # - AttributeName: CreatedAt
+        #   AttributeType: S
       KeySchema:
         - AttributeName: PolicyKeyId
           KeyType: HASH
@@ -52,12 +52,12 @@ Resources:
       AttributeDefinitions:
         - AttributeName: Token
           AttributeType: S
-        - AttributeName: PolicyKeyId
-          AttributeType: S
-        - AttributeName: EncryptionKeyId
-          AttributeValue: S
-        - AttributeName: Pan
-          AttributeType: S
+        # - AttributeName: PolicyKeyId
+        #   AttributeType: S
+        # - AttributeName: EncryptionKeyId
+        #   AttributeType: S
+        # - AttributeName: Pan
+        #   AttributeType: S
       KeySchema:
         - AttributeName: Token
           KeyType: HASH
@@ -73,7 +73,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: cmd/tokenize/tokenize
-      CodeUri: /tokenize.zip
       Runtime: go1.x
       Events:
         Tokenize:
@@ -86,7 +85,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: cmd/detokenize/detokenize
-      CodeUri: /detokenize.zip
       Runtime: go1.x
       Events:
         Detokenize:
@@ -99,7 +97,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: cmd/rotate_encryption_key/rotate_encryption_key
-      CodeUri: /rotate_encryption_key.zip
       Runtime: go1.x
       Events:
         Rotate:
@@ -111,7 +108,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: cmd/evolve_policy_key/evolve_policy_key
-      CodeUri: /evolve_policy_key.zip
       Runtime: go1.x
       Events:
         Evolve:

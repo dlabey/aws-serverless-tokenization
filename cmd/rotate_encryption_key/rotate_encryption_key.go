@@ -12,12 +12,13 @@ import (
 	"gopkg.in/aws/aws-lambda-go.v1/lambda"
 )
 
-func Handler(event events.CloudWatchEvent) (string, error) {
+// RotateEncryptionKeyHandler is a CloudWatch Event handler that rotates the encryption key.
+func RotateEncryptionKeyHandler(event events.CloudWatchEvent) (string, error) {
 	// TODO: check if there is a replace constant
 	// TODO: if there is a replace constant ensure there is a valid EncryptionKeyId to replace
 	// TODO: if there is a valid EncryptionKeyId to replace continue
 	var isReplace bool
-	var encryptionKeyId string
+	// var encryptionKeyId string
 
 	if isReplace {
 		// TODO: get and verify record to be replaced
@@ -97,5 +98,5 @@ func Handler(event events.CloudWatchEvent) (string, error) {
 }
 
 func main() {
-	lambda.Start(Handler)
+	lambda.Start(RotateEncryptionKeyHandler)
 }

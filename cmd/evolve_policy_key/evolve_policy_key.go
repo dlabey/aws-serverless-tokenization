@@ -12,7 +12,8 @@ import (
 	"gopkg.in/aws/aws-lambda-go.v1/lambda"
 )
 
-func Handler(event events.CloudWatchEvent) (string, error) {
+// EvolvePolicyHandler is a CloudWatch even handler that envolves the policy key.
+func EvolvePolicyHandler(event events.CloudWatchEvent) (string, error) {
 	var out string
 
 	config := &aws.Config{
@@ -64,5 +65,5 @@ func Handler(event events.CloudWatchEvent) (string, error) {
 }
 
 func main() {
-	lambda.Start(Handler)
+	lambda.Start(EvolvePolicyHandler)
 }

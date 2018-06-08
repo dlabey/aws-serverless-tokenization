@@ -8,7 +8,7 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
-        - AttributeName: EncryptionKeyId
+        - AttributeName: EncryptionKeyID
           AttributeType: S
         # - AttributeName: DataKey
         #   AttributeType: Binary
@@ -17,7 +17,7 @@ Resources:
         # - AttributeName: RotatedAt
         #   AttributeType: S
       KeySchema:
-        - AttributeName: EncryptionKeyId
+        - AttributeName: EncryptionKeyID
           KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 5
@@ -30,14 +30,14 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
-        - AttributeName: PolicyKeyId
+        - AttributeName: PolicyKeyID
           AttributeType: S
         # - AttributeName: DataKey
         #   AttributeType: Binary
         # - AttributeName: CreatedAt
         #   AttributeType: S
       KeySchema:
-        - AttributeName: PolicyKeyId
+        - AttributeName: PolicyKeyID
           KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 5

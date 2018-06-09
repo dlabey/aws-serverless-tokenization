@@ -17,6 +17,7 @@ import (
 
 // Detail is the contents of the CloudWatch event constant.
 type Detail struct {
+	IsReplace       bool
 	EncryptionKeyID string
 }
 
@@ -31,8 +32,8 @@ type EncryptionKey struct {
 // Token is the token from DynamoDB.
 type Token struct {
 	Token           string
-	PolicyKeyId     string
-	EncryptionKeyId string
+	PolicyKeyID     string
+	EncryptionKeyID string
 	Pan             string
 }
 
@@ -49,19 +50,17 @@ func RotateEncryptionKeyHandler(event events.CloudWatchEvent) (string, error) {
 	}
 	dynamodbSvc := dynamodb.New(sess)
 
-	// TODO: check if there is a replace constant
-	// TODO: if there is a replace constant ensure there is a valid EncryptionKeyId to replace
-	// TODO: if there is a valid EncryptionKeyId to replace continue
-	var isReplace bool
 	var detail Detail
 	var encryptionKey EncryptionKey
 
-	if isReplace {
-		err := json.Unmarshal(event.Detail, &detail)
-		if err != nil {
-			return out, err
-		}
+	// get CloudWatch event detail
+	err = json.Unmarshal(event.Detail, &detail)
+	if err != nil {
+		return out, err
+	}
 
+	// check if this is a replacement and ensure a valid EncryptionKeyID if so
+	if detail.IsReplace {
 		result, err := dynamodbSvc.GetItem(&dynamodb.GetItemInput{
 			TableName: aws.String("EncryptionKeys"),
 			Key: map[string]*dynamodb.AttributeValue{
@@ -100,7 +99,7 @@ func RotateEncryptionKeyHandler(event events.CloudWatchEvent) (string, error) {
 	var isCurrent bool
 
 	// if this is a replace set to is current based on valid EncryptionKeyId
-	if isReplace {
+	if detail.IsReplace {
 		isCurrent = encryptionKey.IsCurrent
 	} else {
 		isCurrent = true
@@ -129,7 +128,7 @@ func RotateEncryptionKeyHandler(event events.CloudWatchEvent) (string, error) {
 	}
 
 	// if this is a replace do the batch update
-	if isReplace == true {
+	if detail.IsReplace {
 		// get all the IDs of the Tokens to have their EncryptionKeyId replaced and Pan encrypted pan updated
 		filt := expression.Name("EncryptionKeyId").Equal(expression.Value(detail.EncryptionKeyID))
 		proj := expression.NamesList(expression.Name("Token"))

@@ -145,25 +145,24 @@ func RotateEncryptionKeyHandler(event events.CloudWatchEvent) (string, error) {
 			FilterExpression:          expr.Filter(),
 			ProjectionExpression:      expr.Projection(),
 			TableName:                 aws.String("EncryptionKeys"),
-		},
-			func(result *dynamodb.ScanOutput, isLastPage bool) bool {
-				for _, i := range result.Items {
-					token := Token{}
-					err = dynamodbattribute.UnmarshalMap(i, &token)
-					if err != nil {
-						scanErr = err
-						break
-					}
-
-					// put Token into SQS/Lambda for update and ingestion
-					// put Token and EncryptionKeyID
-				}
-				if scanErr != nil {
-					return false
+		}, func(result *dynamodb.ScanOutput, isLastPage bool) bool {
+			for _, i := range result.Items {
+				token := Token{}
+				err = dynamodbattribute.UnmarshalMap(i, &token)
+				if err != nil {
+					scanErr = err
+					break
 				}
 
-				return !isLastPage
-			})
+				// put Token into SQS/Lambda for update and ingestion
+				// put Token and EncryptionKeyID
+			}
+			if scanErr != nil {
+				return false
+			}
+
+			return !isLastPage
+		})
 		if err != nil {
 			return out, err
 		}

@@ -2,14 +2,14 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/aws/aws-sdk-go/service/kms"
 	"gopkg.in/aws/aws-lambda-go.v1/events"
 	"gopkg.in/aws/aws-lambda-go.v1/lambda"
@@ -147,7 +147,7 @@ func RotateEncryptionKeyHandler(event events.CloudWatchEvent) (string, error) {
 			ProjectionExpression:      expr.Projection(),
 			TableName:                 aws.String("EncryptionKeys"),
 		},
-			func(result dynamodb.ScanOutput, isLastPage bool) bool {
+			func(result *dynamodb.ScanOutput, isLastPage bool) bool {
 				for _, i := range result.Items {
 					token := Token{}
 					err = dynamodbattribute.UnmarshalMap(i, &token)
@@ -170,7 +170,6 @@ func RotateEncryptionKeyHandler(event events.CloudWatchEvent) (string, error) {
 		}
 		if scanErr != nil {
 			return out, scanErr
-			1
 		}
 
 		// start a lambda step function state machine that batch updates the tokens

@@ -72,7 +72,7 @@ Resources:
   Tokenizer:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: cmd/tokenize/tokenize
+      Handler: cmd/tokenize/main
       Runtime: go1.x
       Events:
         Tokenize:
@@ -80,12 +80,12 @@ Resources:
           Properties:
             Path: /tokenize
             Method: post
-      CodeUri: s3://aws-serverless-tokenization/a42e439ce7f950627b9a476d7c155ea1
+      #CodeUri: s3://aws-serverless-tokenization/ae3d326de5a0c562adfec322a5233ea2
 
   Detokenizer:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: cmd/detokenize/detokenize
+      Handler: cmd/detokenize/main
       Runtime: go1.x
       Events:
         Detokenize:
@@ -93,7 +93,7 @@ Resources:
           Properties:
             Path: /detokenize
             Method: post
-      CodeUri: s3://aws-serverless-tokenization/a42e439ce7f950627b9a476d7c155ea1
+      #CodeUri: s3://aws-serverless-tokenization/ae3d326de5a0c562adfec322a5233ea2
 
   EncryptionKeyRotatorDocument:
     Type: AWS::SSM::Document
@@ -108,7 +108,8 @@ Resources:
                   "default": "false"
               },
               "EncryptionKeyID": {
-                  "type": "String"
+                  "type": "String",
+                  "default": ""
               }
           },
           "mainSteps": [{
@@ -124,7 +125,7 @@ Resources:
   EncryptionKeyRotator:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: cmd/rotate_encryption_key/rotate_encryption_key
+      Handler: cmd/rotate_encryption_key/main
       Runtime: go1.x
       Events:
         Rotate:
@@ -138,7 +139,7 @@ Resources:
               Detail:
                 DocumentName:
                   - EncryptionKeyRotatorDocument
-      CodeUri: s3://aws-serverless-tokenization/a42e439ce7f950627b9a476d7c155ea1
+      #CodeUri: s3://aws-serverless-tokenization/ae3d326de5a0c562adfec322a5233ea2
 
   PolicyKeyEvolverDocument:
     Type: AWS::SSM::Document
@@ -159,7 +160,7 @@ Resources:
   PolicyKeyEvolver:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: cmd/evolve_policy_key/evolve_policy_key
+      Handler: cmd/evolve_policy_key/main
       Runtime: go1.x
       Events:
         Evolve:
@@ -173,4 +174,4 @@ Resources:
               Detail:
                 DocumentName:
                   - PolicyKeyEvolverDocument
-      CodeUri: s3://aws-serverless-tokenization/a42e439ce7f950627b9a476d7c155ea1
+      #CodeUri: s3://aws-serverless-tokenization/ae3d326de5a0c562adfec322a5233ea2

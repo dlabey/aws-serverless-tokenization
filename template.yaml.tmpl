@@ -159,6 +159,10 @@ Resources:
     Properties:
       Handler: cmd/evolve_policy_key/main
       Runtime: go1.x
+      Policies:
+        - kms:Create*
+        - kms:GenerateDataKey*
+        - dynamodb:PutItem
       Events:
         Evolve:
           Type: CloudWatchEvent

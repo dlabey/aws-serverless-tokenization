@@ -159,10 +159,6 @@ Resources:
     Properties:
       Handler: cmd/evolve_policy_key/main
       Runtime: go1.x
-      Policies:
-        - kms:Create*
-        - kms:GenerateDataKey*
-        - dynamodb:PutItem
       Events:
         Evolve:
           Type: CloudWatchEvent
@@ -175,3 +171,12 @@ Resources:
               Detail:
                 DocumentName:
                   - PolicyKeyEvolverDocument
+      Policies:
+      - Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - kms:GenerateDataKey
+              - kms:CreateKey
+            Resource: "*"
+      - AmazonDynamoDBFullAccess

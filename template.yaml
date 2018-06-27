@@ -3,7 +3,7 @@ Description: AWS Serverless Tokenization Example
 Resources:
   Detokenizer:
     Properties:
-      CodeUri: s3://aws-serverless-tokenization/a055cf8b0a8be51d1cfb23be7a6e196e
+      CodeUri: s3://aws-serverless-tokenization/bf7d708d21e4e35c4f6db9cfaa937577
       Events:
         Detokenize:
           Properties:
@@ -15,7 +15,7 @@ Resources:
     Type: AWS::Serverless::Function
   EncryptionKeyRotator:
     Properties:
-      CodeUri: s3://aws-serverless-tokenization/a055cf8b0a8be51d1cfb23be7a6e196e
+      CodeUri: s3://aws-serverless-tokenization/bf7d708d21e4e35c4f6db9cfaa937577
       Events:
         Rotate:
           Properties:
@@ -62,7 +62,7 @@ Resources:
     Type: AWS::DynamoDB::Table
   PolicyKeyEvolver:
     Properties:
-      CodeUri: s3://aws-serverless-tokenization/a055cf8b0a8be51d1cfb23be7a6e196e
+      CodeUri: s3://aws-serverless-tokenization/bf7d708d21e4e35c4f6db9cfaa937577
       Events:
         Evolve:
           Properties:
@@ -77,9 +77,14 @@ Resources:
           Type: CloudWatchEvent
       Handler: cmd/evolve_policy_key/main
       Policies:
-      - kms:Create*
-      - kms:GenerateDataKey*
-      - dynamodb:PutItem
+      - Statement:
+        - Action:
+          - kms:GenerateDataKey
+          - kms:CreateKey
+          Effect: Allow
+          Resource: '*'
+        Version: 2012-10-17
+      - AmazonDynamoDBFullAccess
       Runtime: go1.x
     Type: AWS::Serverless::Function
   PolicyKeyEvolverDocument:
@@ -108,7 +113,7 @@ Resources:
     Type: AWS::DynamoDB::Table
   Tokenizer:
     Properties:
-      CodeUri: s3://aws-serverless-tokenization/a055cf8b0a8be51d1cfb23be7a6e196e
+      CodeUri: s3://aws-serverless-tokenization/bf7d708d21e4e35c4f6db9cfaa937577
       Events:
         Tokenize:
           Properties:

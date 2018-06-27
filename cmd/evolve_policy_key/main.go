@@ -34,7 +34,8 @@ func EvolvePolicyHandler(event events.CloudWatchEvent) (string, error) {
 
 	// generate the encrypted data key for the new policy key
 	dataKeyInput := &kms.GenerateDataKeyInput{
-		KeyId: aws.String(*policyKeyRes.KeyMetadata.KeyId),
+		KeyId:   aws.String(*policyKeyRes.KeyMetadata.KeyId),
+		KeySpec: aws.String("AES_256"),
 	}
 	dataKeyRes, err := kmsSvc.GenerateDataKey(dataKeyInput)
 	if err != nil {
@@ -45,7 +46,7 @@ func EvolvePolicyHandler(event events.CloudWatchEvent) (string, error) {
 	policyKeyInput := &dynamodb.PutItemInput{
 		TableName: aws.String("PolicyKeys"),
 		Item: map[string]*dynamodb.AttributeValue{
-			"PolicyKeyId": {
+			"PolicyKeyID": {
 				S: aws.String(*policyKeyRes.KeyMetadata.KeyId),
 			},
 			"DataKey": {

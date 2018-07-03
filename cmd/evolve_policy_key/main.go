@@ -12,6 +12,10 @@ import (
 	"gopkg.in/aws/aws-lambda-go.v1/lambda"
 )
 
+var sessionNew = session.NewSession
+var kmsNew = kms.New
+var dynamoNew = dynamodb.New
+
 // EvolvePolicyHandler is a CloudWatch even handler that envolves the policy key.
 func EvolvePolicyHandler(event events.CloudWatchEvent) (string, error) {
 	var out string
@@ -19,12 +23,12 @@ func EvolvePolicyHandler(event events.CloudWatchEvent) (string, error) {
 	config := &aws.Config{
 		Region: aws.String(os.Getenv("REGION")),
 	}
-	sess, err := session.NewSession(config)
+	sess, err := sessionNew(config)
 	if err != nil {
 		return out, err
 	}
-	kmsSvc := kms.New(sess)
-	dynamodbSvc := dynamodb.New(sess)
+	kmsSvc := kmsNew(sess)
+	dynamodbSvc := dynamoNew(sess)
 
 	// create a new policy key
 	policyKeyRes, err := kmsSvc.CreateKey(&kms.CreateKeyInput{})

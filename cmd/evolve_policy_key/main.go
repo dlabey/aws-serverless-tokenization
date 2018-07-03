@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -12,23 +11,41 @@ import (
 	"gopkg.in/aws/aws-lambda-go.v1/lambda"
 )
 
-var sessionNew = session.NewSession
-var kmsNew = kms.New
-var dynamoNew = dynamodb.New
+// AWS Clients that can be mocked for testing
+var (
+	KMS      = NewKMS()
+	DynamoDB = NewDynamoDB()
+
+	sess = session.Must(session.NewSession())
+)
+
+// KMSAPI is a subset of kmsiface.KMSAPI
+type KMSAPI interface {
+	CreateKey(input *kms.CreateKeyInput) (*kms.CreateKeyOutput, error)
+	GenerateDataKey(input *kms.GenerateDataKeyInput) (*kms.GenerateDataKeyOutput, error)
+}
+
+// NewKMS is a mockable KMS client
+func NewKMS() KMSAPI {
+	return kms.New(sess)
+}
+
+// DynamoDBAPI is a subset of dynamodbiface.DynamoDBAPI
+type DynamoDBAPI interface {
+	PutItem(input *dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error)
+}
+
+// NewDynamoDB is a mockable DynamoDB client
+func NewDynamoDB() DynamoDBAPI {
+	return dynamodb.New(sess)
+}
 
 // EvolvePolicyHandler is a CloudWatch even handler that envolves the policy key.
 func EvolvePolicyHandler(event events.CloudWatchEvent) (string, error) {
 	var out string
 
-	config := &aws.Config{
-		Region: aws.String(os.Getenv("REGION")),
-	}
-	sess, err := sessionNew(config)
-	if err != nil {
-		return out, err
-	}
-	kmsSvc := kmsNew(sess)
-	dynamodbSvc := dynamoNew(sess)
+	kmsSvc := NewKMS()
+	dynamodbSvc := NewDynamoDB()
 
 	// create a new policy key
 	policyKeyRes, err := kmsSvc.CreateKey(&kms.CreateKeyInput{})

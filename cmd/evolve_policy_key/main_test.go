@@ -12,6 +12,8 @@ type Mock struct {
 }
 
 func TestHandler(t *testing.T) {
+	oldSessionNew := 
+
 	sessionNew = func() (*Session, error) { return new(Mock) }
 	kmsNew = func() *KMS { return new(Mock) }
 	dynamoNew = func *DynamoDB { return new(Mock) }

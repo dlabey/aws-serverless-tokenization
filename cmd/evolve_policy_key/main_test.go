@@ -56,7 +56,6 @@ func TestHandler(test *testing.T) {
 	out, err := EvolvePolicyHandler(kmsSvcMock, dynamodbSvcMock)(evt)
 
 	fmt.Println(out)
-
 	fmt.Println(err)
 
 	kmsSvcMock.AssertExpectations(test)

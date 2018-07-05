@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/stretchr/testify/mock"
-	"gopkg.in/aws/aws-lambda-go.v1/events"
 )
 
 type MockKMS struct {
@@ -41,7 +40,7 @@ func TestHandler(test *testing.T) {
 	kmsSvcMock := new(MockKMS)
 	dynamodbSvcMock := new(MockDynamoDb)
 
-	evt := events.CloudWatchEvent{}
+	evt := Params{}
 
 	kmsSvcMock.On("CreateKey", mock.Anything).Return(&kms.CreateKeyOutput{
 		KeyMetadata: &kms.KeyMetadata{

@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/kms"
-	"gopkg.in/aws/aws-lambda-go.v1/events"
 	"gopkg.in/aws/aws-lambda-go.v1/lambda"
 )
 
@@ -23,9 +22,13 @@ type DynamoDBAPI interface {
 	PutItem(input *dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error)
 }
 
+// Params are the parameters from the Lambda invokation.
+type Params struct {
+}
+
 // EvolvePolicyHandler is a CloudWatch even handler that envolves the policy key.
-func EvolvePolicyHandler(kmsSvc KMSAPI, dynamodbSvc DynamoDBAPI) func(event events.CloudWatchEvent) (string, error) {
-	return func(event events.CloudWatchEvent) (string, error) {
+func EvolvePolicyHandler(kmsSvc KMSAPI, dynamodbSvc DynamoDBAPI) func(params Params) (string, error) {
+	return func(params Params) (string, error) {
 		var out string
 
 		// create a new policy key

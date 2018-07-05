@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"os"
 	"strconv"
 	"time"
@@ -12,14 +12,13 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/aws/aws-sdk-go/service/kms"
-	"gopkg.in/aws/aws-lambda-go.v1/events"
 	"gopkg.in/aws/aws-lambda-go.v1/lambda"
 )
 
-// Detail is the contents of the CloudWatch event constant.
-type Detail struct {
-	IsReplace       string
-	EncryptionKeyID string
+// Params are the parameters from the Lambda invokation.
+type Params struct {
+	IsReplace       string `json:"is_replace"`
+	EncryptionKeyID string `json:"encryption_key_id"`
 }
 
 // EncryptionKey is the encryption key from DynamoDB.
@@ -39,7 +38,7 @@ type Token struct {
 }
 
 // RotateEncryptionKeyHandler is a CloudWatch Event handler that rotates the encryption key.
-func RotateEncryptionKeyHandler(event events.CloudWatchEvent) (string, error) {
+func RotateEncryptionKeyHandler(ctx context.Context, params Params) (string, error) {
 	var out string
 
 	config := &aws.Config{
@@ -51,17 +50,10 @@ func RotateEncryptionKeyHandler(event events.CloudWatchEvent) (string, error) {
 	}
 	dynamodbSvc := dynamodb.New(sess)
 
-	var detail Detail
 	var encryptionKey EncryptionKey
 
-	// get CloudWatch event detail
-	err = json.Unmarshal(event.Detail, &detail)
-	if err != nil {
-		return out, err
-	}
-
 	// convert IsReplace to bool
-	isReplace, err := strconv.ParseBool(detail.IsReplace)
+	isReplace, err := strconv.ParseBool(params.IsReplace)
 	if err != nil {
 		return out, err
 	}
@@ -72,7 +64,7 @@ func RotateEncryptionKeyHandler(event events.CloudWatchEvent) (string, error) {
 			TableName: aws.String("EncryptionKeys"),
 			Key: map[string]*dynamodb.AttributeValue{
 				"EncryptionKeyID": {
-					S: aws.String(detail.EncryptionKeyID),
+					S: aws.String(params.EncryptionKeyID),
 				},
 			},
 		})
@@ -96,7 +88,8 @@ func RotateEncryptionKeyHandler(event events.CloudWatchEvent) (string, error) {
 
 	// generate the encrypted data key for the new encryption key
 	dataKeyInput := &kms.GenerateDataKeyInput{
-		KeyId: aws.String(*encryptionKeyRes.KeyMetadata.KeyId),
+		KeyId:   aws.String(*encryptionKeyRes.KeyMetadata.KeyId),
+		KeySpec: aws.String("AES_256"),
 	}
 	dataKeyRes, err := kmsSvc.GenerateDataKey(dataKeyInput)
 	if err != nil {
@@ -116,7 +109,7 @@ func RotateEncryptionKeyHandler(event events.CloudWatchEvent) (string, error) {
 	_, err = dynamodbSvc.PutItem(&dynamodb.PutItemInput{
 		TableName: aws.String("EncryptionKeys"),
 		Item: map[string]*dynamodb.AttributeValue{
-			"EncryptionKeyId": {
+			"EncryptionKeyID": {
 				S: aws.String(*encryptionKeyRes.KeyMetadata.KeyId),
 			},
 			"DataKey": {
@@ -137,7 +130,7 @@ func RotateEncryptionKeyHandler(event events.CloudWatchEvent) (string, error) {
 	// if this is a replace do the batch update
 	if isReplace {
 		// get all the IDs of the Tokens to have their EncryptionKeyId replaced and Pan encrypted pan updated
-		filt := expression.Name("EncryptionKeyId").Equal(expression.Value(detail.EncryptionKeyID))
+		filt := expression.Name("EncryptionKeyId").Equal(expression.Value(params.EncryptionKeyID))
 		proj := expression.NamesList(expression.Name("Token"))
 		expr, err := expression.NewBuilder().WithFilter(filt).WithProjection(proj).Build()
 		if err != nil {

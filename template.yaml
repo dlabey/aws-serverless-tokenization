@@ -3,7 +3,7 @@ Description: AWS Serverless Tokenization Example
 Resources:
   Detokenizer:
     Properties:
-      CodeUri: s3://aws-serverless-tokenization/bf7d708d21e4e35c4f6db9cfaa937577
+      CodeUri: s3://aws-serverless-tokenization/a8452801ddfd7df7d9666b0bbe4d2431
       Events:
         Detokenize:
           Properties:
@@ -15,36 +15,19 @@ Resources:
     Type: AWS::Serverless::Function
   EncryptionKeyRotator:
     Properties:
-      CodeUri: s3://aws-serverless-tokenization/bf7d708d21e4e35c4f6db9cfaa937577
-      Events:
-        Rotate:
-          Properties:
-            Pattern:
-              Detail:
-                DocumentName:
-                - EncryptionKeyRotatorDocument
-              DetailType:
-              - EC2 Command Status-change Notification
-              Source:
-              - aws.ssm
-          Type: CloudWatchEvent
+      CodeUri: s3://aws-serverless-tokenization/a8452801ddfd7df7d9666b0bbe4d2431
       Handler: cmd/rotate_encryption_key/main
+      Policies:
+      - Statement:
+        - Action:
+          - kms:GenerateDataKey
+          - kms:CreateKey
+          Effect: Allow
+          Resource: '*'
+        Version: 2012-10-17
+      - AmazonDynamoDBFullAccess
       Runtime: go1.x
     Type: AWS::Serverless::Function
-  EncryptionKeyRotatorDocument:
-    Properties:
-      Content:
-        Fn::Sub: "{\n  \"schemaVersion\": \"0.3\",\n  \"parameters\": {\n      \"\
-          IsReplace\": {\n          \"type\": \"String\",\n          \"default\":\
-          \ \"false\"\n      },\n      \"EncryptionKeyID\": {\n          \"type\"\
-          : \"String\",\n          \"default\": \"\"\n      }\n  },\n  \"mainSteps\"\
-          : [{\n      \"name\": \"InvokeEncryptionKeyRotator\",\n      \"action\"\
-          : \"aws:invokeLambdaFunction\",\n      \"inputs\": {\n          \"FunctionName\"\
-          : \"${EncryptionKeyRotator}\",\n          \"Payload\": \"{\\\"IsReplace\\\
-          \": \\\"{{IsReplace}}\\\", \\\"EncryptionKeyID\\\": \\\"{{EncryptionKeyID}}\\\
-          \"}\"\n      }\n  }]\n}\n"
-      DocumentType: Automation
-    Type: AWS::SSM::Document
   EncryptionKeys:
     Properties:
       AttributeDefinitions:
@@ -62,19 +45,7 @@ Resources:
     Type: AWS::DynamoDB::Table
   PolicyKeyEvolver:
     Properties:
-      CodeUri: s3://aws-serverless-tokenization/bf7d708d21e4e35c4f6db9cfaa937577
-      Events:
-        Evolve:
-          Properties:
-            Pattern:
-              Detail:
-                DocumentName:
-                - PolicyKeyEvolverDocument
-              DetailType:
-              - EC2 Command Status-change Notification
-              Source:
-              - aws.ssm
-          Type: CloudWatchEvent
+      CodeUri: s3://aws-serverless-tokenization/a8452801ddfd7df7d9666b0bbe4d2431
       Handler: cmd/evolve_policy_key/main
       Policies:
       - Statement:
@@ -87,15 +58,6 @@ Resources:
       - AmazonDynamoDBFullAccess
       Runtime: go1.x
     Type: AWS::Serverless::Function
-  PolicyKeyEvolverDocument:
-    Properties:
-      Content:
-        Fn::Sub: "{\n  \"schemaVersion\": \"0.3\",\n  \"mainSteps\": [{\n      \"\
-          name\": \"InvokePolicyKeyEvolver\",\n      \"action\": \"aws:invokeLambdaFunction\"\
-          ,\n      \"inputs\": {\n          \"FunctionName\": \"${PolicyKeyEvolver}\"\
-          \n      }\n  }]\n}\n"
-      DocumentType: Automation
-    Type: AWS::SSM::Document
   PolicyKeys:
     Properties:
       AttributeDefinitions:
@@ -113,7 +75,7 @@ Resources:
     Type: AWS::DynamoDB::Table
   Tokenizer:
     Properties:
-      CodeUri: s3://aws-serverless-tokenization/bf7d708d21e4e35c4f6db9cfaa937577
+      CodeUri: s3://aws-serverless-tokenization/a8452801ddfd7df7d9666b0bbe4d2431
       Events:
         Tokenize:
           Properties:

@@ -115,7 +115,7 @@ Resources:
               "action": "aws:invokeLambdaFunction",
               "inputs": {
                   "FunctionName": "${EncryptionKeyRotator}",
-                  "Payload": "{\"IsReplace\": \"{{IsReplace}}\", \"EncryptionKeyID\": \"{{EncryptionKeyID}}\"}"
+                  "Payload": "{"IsReplace" : "{{IsReplace}}", "EncryptionKeyID": "{{EncryptionKeyID}}"}"
               }
           }]
         }

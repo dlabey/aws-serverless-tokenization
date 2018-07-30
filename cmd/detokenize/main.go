@@ -7,6 +7,10 @@ import (
 
 // DetokenizeHandler is An API Gateway handler that detokenizes a token into a credit card.
 func DetokenizeHandler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	// get token
+	// get encryption key
+	// detokenize
+
 	return events.APIGatewayProxyResponse{
 		Body:       "Detokenize",
 		StatusCode: 200,

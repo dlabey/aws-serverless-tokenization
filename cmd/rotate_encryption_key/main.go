@@ -170,12 +170,11 @@ func RotateEncryptionKeyHandler(ctx context.Context, params Params) (string, err
 			return out, scanErr
 		}
 
-		// start a lambda step function state machine that batch updates the tokens
-		// which match the validEncryptionKeyId to be replaced
-		// * batch update the records with parallel lambdas
-		// * if all are successful good
-		// * if any fail send notification to SNS topic
-		// * prior key is kept around if any fail, otherwise deleted
+		// send the ids of the tokens that need to be rotated to an sns topic
+		// subscribe the lambda to the sns topic to rotate the keys
+		// any failed notify another sns topic if retry does not work
+		// put any that did not work into dead letter sns, keep track of retry on token record, reset if successful
+		// the retries go to a sqs which is polled for dead letter queue
 	}
 
 	return out, err

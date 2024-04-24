@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"gopkg.in/aws/aws-lambda-go.v1/lambda"
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 // Params are the parameters from the Lambda invokation.

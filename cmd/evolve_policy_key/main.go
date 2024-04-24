@@ -1,38 +1,29 @@
 package main
 
 import (
+	"context"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/kms"
-	"gopkg.in/aws/aws-lambda-go.v1/lambda"
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 )
-
-// KMSAPI is a subset of kmsiface.KMSAPI
-type KMSAPI interface {
-	CreateKey(input *kms.CreateKeyInput) (*kms.CreateKeyOutput, error)
-	GenerateDataKey(input *kms.GenerateDataKeyInput) (*kms.GenerateDataKeyOutput, error)
-}
-
-// DynamoDBAPI is a subset of dynamodbiface.DynamoDBAPI
-type DynamoDBAPI interface {
-	PutItem(input *dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error)
-}
 
 // Params are the parameters from the Lambda invokation.
 type Params struct {
 }
 
 // EvolvePolicyHandler is a CloudWatch even handler that envolves the policy key.
-func EvolvePolicyHandler(kmsSvc KMSAPI, dynamodbSvc DynamoDBAPI) func(params Params) (string, error) {
+func EvolvePolicyHandler(kmsSvc kms.Client, dynamodbSvc dynamodb.Client) func(params Params) (string, error) {
 	return func(params Params) (string, error) {
 		var out string
 
 		// create a new policy key
-		policyKeyRes, err := kmsSvc.CreateKey(&kms.CreateKeyInput{})
+		policyKeyRes, err := kmsSvc.CreateKey(context.TODO(), &kms.CreateKeyInput{})
 		if err != nil {
 			return out, err
 		}
@@ -40,29 +31,36 @@ func EvolvePolicyHandler(kmsSvc KMSAPI, dynamodbSvc DynamoDBAPI) func(params Par
 		// generate the encrypted data key for the new policy key
 		dataKeyInput := &kms.GenerateDataKeyInput{
 			KeyId:   aws.String(*policyKeyRes.KeyMetadata.KeyId),
-			KeySpec: aws.String("AES_256"),
+			KeySpec: "AES_256",
 		}
-		dataKeyRes, err := kmsSvc.GenerateDataKey(dataKeyInput)
+		dataKeyRes, err := kmsSvc.GenerateDataKey(context.TODO(), dataKeyInput)
 		if err != nil {
 			return out, err
 		}
 
 		// save policy reference in database
+		policyKeyId, err := attributevalue.Marshal(*policyKeyRes.KeyMetadata.KeyId)
+		if err != nil {
+			panic(err)
+		}
+		dataKey, err := attributevalue.Marshal(dataKeyRes.CiphertextBlob)
+		if err != nil {
+			panic(err)
+		}
+		createdAt, err := attributevalue.Marshal(time.Now().UTC().Format(time.RFC3339))
+		if err != nil {
+			panic(err)
+		}
 		policyKeyInput := &dynamodb.PutItemInput{
 			TableName: aws.String("PolicyKeys"),
-			Item: map[string]*dynamodb.AttributeValue{
-				"PolicyKeyID": {
-					S: aws.String(*policyKeyRes.KeyMetadata.KeyId),
-				},
-				"DataKey": {
-					B: dataKeyRes.CiphertextBlob,
-				},
-				"CreatedAt": {
-					S: aws.String(time.Now().UTC().Format(time.RFC3339)),
-				},
+			Item: map[string]types.AttributeValue{
+				"PolicyKeyID": policyKeyId,
+				"DataKey": dataKey,
+				"CreatedAt": createdAt,
 			},
+
 		}
-		_, err = dynamodbSvc.PutItem(policyKeyInput)
+		_, err = dynamodbSvc.PutItem(context.TODO(), policyKeyInput)
 		if err == nil {
 			out = *policyKeyRes.KeyMetadata.KeyId
 		}
@@ -72,12 +70,11 @@ func EvolvePolicyHandler(kmsSvc KMSAPI, dynamodbSvc DynamoDBAPI) func(params Par
 }
 
 func main() {
-	sess := session.Must(session.NewSession(&aws.Config{
-		Region: aws.String(os.Getenv("REGION")),
-	}))
+	cfg := aws.Config{
+		Region: os.Getenv("REGION"),
+	}
+	kmsSvc := kms.NewFromConfig(cfg)
+	dynamodbSvc := dynamodb.NewFromConfig(cfg)
 
-	kmsSvc := kms.New(sess)
-	dynamodbSvc := dynamodb.New(sess)
-
-	lambda.Start(EvolvePolicyHandler(kmsSvc, dynamodbSvc))
+	lambda.Start(EvolvePolicyHandler(*kmsSvc, *dynamodbSvc))
 }

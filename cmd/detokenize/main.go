@@ -1,8 +1,8 @@
 package main
 
 import (
-	"gopkg.in/aws/aws-lambda-go.v1/events"
-	"gopkg.in/aws/aws-lambda-go.v1/lambda"
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 // DetokenizeHandler is An API Gateway handler that detokenizes a token into a credit card.

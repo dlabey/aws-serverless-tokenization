@@ -2,17 +2,18 @@ package main
 
 import (
 	"context"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	dynamodbTypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
+	kmsTypes "github.com/aws/aws-sdk-go-v2/service/kms/types"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
-	"github.com/aws/aws-sdk-go/service/kms"
-	"gopkg.in/aws/aws-lambda-go.v1/lambda"
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 // Params are the parameters from the Lambda invokation.
@@ -41,14 +42,10 @@ type Token struct {
 func RotateEncryptionKeyHandler(ctx context.Context, params Params) (string, error) {
 	var out string
 
-	config := &aws.Config{
-		Region: aws.String(os.Getenv("REGION")),
+	cfg := aws.Config{
+		Region: os.Getenv("REGION"),
 	}
-	sess, err := session.NewSession(config)
-	if err != nil {
-		return out, err
-	}
-	dynamodbSvc := dynamodb.New(sess)
+	dynamodbSvc := dynamodb.NewFromConfig(cfg)
 
 	var encryptionKey EncryptionKey
 
@@ -60,28 +57,27 @@ func RotateEncryptionKeyHandler(ctx context.Context, params Params) (string, err
 
 	// check if this is a replacement and ensure a valid EncryptionKeyID if so
 	if isReplace {
-		result, err := dynamodbSvc.GetItem(&dynamodb.GetItemInput{
+		encryptionKeyID, err := attributevalue.Marshal(time.Now().UTC().Format(time.RFC3339))
+		result, err := dynamodbSvc.GetItem(context.TODO(), &dynamodb.GetItemInput{
 			TableName: aws.String("EncryptionKeys"),
-			Key: map[string]*dynamodb.AttributeValue{
-				"EncryptionKeyID": {
-					S: aws.String(params.EncryptionKeyID),
-				},
+			Key: map[string]dynamodbTypes.AttributeValue{
+				"EncryptionKeyID": encryptionKeyID,
 			},
 		})
 		if err != nil {
 			return out, err
 		}
 
-		err = dynamodbattribute.UnmarshalMap(result.Item, &encryptionKey)
+		err = attributevalue.UnmarshalMap(result.Item, &encryptionKey)
 		if err != nil {
 			return out, err
 		}
 	}
 
-	kmsSvc := kms.New(sess)
+	kmsSvc := kms.NewFromConfig(cfg)
 
 	// create a new encryption key
-	encryptionKeyRes, err := kmsSvc.CreateKey(&kms.CreateKeyInput{})
+	encryptionKeyRes, err := kmsSvc.CreateKey(context.TODO(), &kms.CreateKeyInput{})
 	if err != nil {
 		return out, err
 	}
@@ -89,9 +85,9 @@ func RotateEncryptionKeyHandler(ctx context.Context, params Params) (string, err
 	// generate the encrypted data key for the new encryption key
 	dataKeyInput := &kms.GenerateDataKeyInput{
 		KeyId:   aws.String(*encryptionKeyRes.KeyMetadata.KeyId),
-		KeySpec: aws.String("AES_256"),
+		KeySpec: kmsTypes.DataKeySpecAes256,
 	}
-	dataKeyRes, err := kmsSvc.GenerateDataKey(dataKeyInput)
+	dataKeyRes, err := kmsSvc.GenerateDataKey(context.TODO(), dataKeyInput)
 	if err != nil {
 		return out, err
 	}
@@ -106,21 +102,30 @@ func RotateEncryptionKeyHandler(ctx context.Context, params Params) (string, err
 	}
 
 	// save encryption key reference in database
-	_, err = dynamodbSvc.PutItem(&dynamodb.PutItemInput{
+	encryptionKeyID, err := attributevalue.Marshal(*encryptionKeyRes.KeyMetadata.KeyId)
+	if err != nil {
+		return out, err
+	}
+	dataKey, err := attributevalue.Marshal(dataKeyRes.CiphertextBlob)
+	if err != nil {
+		return out, err
+	}
+	isCurrentVal, err := attributevalue.Marshal(isCurrent)
+	if err != nil {
+		return out, err
+	}
+	rotatedAt, err := attributevalue.Marshal(time.Now().UTC().Format(time.RFC3339))
+	if err != nil {
+		return out, err
+	}
+
+	_, err = dynamodbSvc.PutItem(context.TODO(), &dynamodb.PutItemInput{
 		TableName: aws.String("EncryptionKeys"),
-		Item: map[string]*dynamodb.AttributeValue{
-			"EncryptionKeyID": {
-				S: aws.String(*encryptionKeyRes.KeyMetadata.KeyId),
-			},
-			"DataKey": {
-				B: dataKeyRes.CiphertextBlob,
-			},
-			"IsCurrent": {
-				BOOL: aws.Bool(isCurrent),
-			},
-			"RotatedAt": {
-				S: aws.String(time.Now().UTC().Format(time.RFC3339)),
-			},
+		Item: map[string]dynamodbTypes.AttributeValue{
+			"EncryptionKeyID": encryptionKeyID,
+			"DataKey": dataKey,
+			"IsCurrent": isCurrentVal,
+			"RotatedAt": rotatedAt,
 		},
 	})
 	if err == nil {
@@ -139,16 +144,22 @@ func RotateEncryptionKeyHandler(ctx context.Context, params Params) (string, err
 
 		var scanErr error
 
-		err = dynamodbSvc.ScanPages(&dynamodb.ScanInput{
+		scanPaginator := dynamodb.NewScanPaginator(dynamodbSvc, &dynamodb.ScanInput{
 			ExpressionAttributeNames:  expr.Names(),
 			ExpressionAttributeValues: expr.Values(),
 			FilterExpression:          expr.Filter(),
 			ProjectionExpression:      expr.Projection(),
 			TableName:                 aws.String("EncryptionKeys"),
-		}, func(result *dynamodb.ScanOutput, isLastPage bool) bool {
-			for _, i := range result.Items {
+		})
+		for scanPaginator.HasMorePages() {
+			scanOut, err := scanPaginator.NextPage(context.TODO())
+			if err != nil {
+				return out, err
+			}
+
+			for _, i := range scanOut.Items {
 				token := Token{}
-				err = dynamodbattribute.UnmarshalMap(i, &token)
+				err = attributevalue.UnmarshalMap(i, &token)
 				if err != nil {
 					scanErr = err
 					break
@@ -158,11 +169,9 @@ func RotateEncryptionKeyHandler(ctx context.Context, params Params) (string, err
 				// put Token and EncryptionKeyID
 			}
 			if scanErr != nil {
-				return false
+				break
 			}
-
-			return !isLastPage
-		})
+		}
 		if err != nil {
 			return out, err
 		}
